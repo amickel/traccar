@@ -26,14 +26,15 @@ import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
 import org.traccar.model.Position;
+import java.util.GregorianCalendar;
 
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Pattern;
 
 public class T55ProtocolDecoder extends BaseProtocolDecoder {
-
     public T55ProtocolDecoder(Protocol protocol) {
         super(protocol);
     }
@@ -61,6 +62,13 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
             .any()
             .compile();
 
+    private static final Pattern PATTERN_PCPTMINR = new PatternBuilder()
+            .text("$PCPTMINR,")					 // EVERYTHING below is float unless otherwise specified
+            .number("([0-9]*).?d*,")         // time (hhmmss)
+            .number("(-?d+.d+),")                // latitude
+            .number("(-?d+.d+),")                // longitude*/
+            .any()
+            .compile();
     private static final Pattern PATTERN_GPGGA = new PatternBuilder()
             .text("$GPGGA,")
             .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
@@ -126,6 +134,27 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
 
     private Position position = null;
 
+    private Position decodePCPTMINR(DeviceSession deviceSession, String sentence) {
+	        Parser parser = new Parser(PATTERN_PCPTMINR, sentence);
+	        if (!parser.matches()) {
+	            return null;
+	        }
+
+	        Position position = new Position(getProtocolName());
+	        position.setDeviceId(deviceSession.getDeviceId());    
+	        position.setTime(new Date());//dateBuilder.getDate());
+	        
+	        /*DateBuilder dateBuilder = new DateBuilder()
+	                .setCurrentDate()
+	                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));*/
+	        //Date date = new Date();  
+	        position.setValid(true);
+	        position.setLatitude(parser.nextDouble(0));
+	        position.setLongitude(parser.nextDouble(0)); 
+
+	        return position;
+    }
+    
     private Position decodeGprmc(
             DeviceSession deviceSession, String sentence, SocketAddress remoteAddress, Channel channel) {
 
@@ -196,13 +225,15 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
 
         Position position = new Position(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
+        
+        position.setTime(new Date());//dateBuilder.getDate());
+ 
 
         DateBuilder dateBuilder = new DateBuilder()
                 .setCurrentDate()
                 .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
         position.setTime(dateBuilder.getDate());
-
-        position.setValid(true);
+        position.setValid(true); 
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
 
@@ -354,6 +385,8 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
             return decodeGpiop(deviceSession, sentence);
         } else if (sentence.startsWith("QZE")) {
             return decodeQze(channel, remoteAddress, sentence);
+        }else if (sentence.startsWith("$PCPTMINR") && deviceSession != null) {
+            return decodePCPTMINR(deviceSession, sentence);
         }
 
         return null;
