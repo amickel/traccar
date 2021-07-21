@@ -237,6 +237,16 @@ public class Position extends Message {
         this.longitude = longitude;
     }
 
+    private double uptime; // value in seconds
+
+    public double getUptime() {
+        return uptime;
+    }
+
+    public void setUptime(double uptime) {
+        this.uptime = uptime;
+    }
+    
     private double altitude; // value in meters
 
     public double getAltitude() {

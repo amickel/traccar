@@ -26,15 +26,14 @@ import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
 import org.traccar.model.Position;
-import java.util.GregorianCalendar;
 
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Pattern;
 
 public class T55ProtocolDecoder extends BaseProtocolDecoder {
+	
     public T55ProtocolDecoder(Protocol protocol) {
         super(protocol);
     }
@@ -64,9 +63,10 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
 
     private static final Pattern PATTERN_PCPTMINR = new PatternBuilder()
             .text("$PCPTMINR,")					 // EVERYTHING below is float unless otherwise specified
-            .number("([0-9]*).?d*,")         // time (hhmmss)
+            .number("([0-9]*).?d*,")             // router uptime in seconds
             .number("(-?d+.d+),")                // latitude
-            .number("(-?d+.d+),")                // longitude*/
+            .number("(-?d+.d+),")                // longitude
+            .number("(-?d+.d+),")                // altitude
             .any()
             .compile();
     private static final Pattern PATTERN_GPGGA = new PatternBuilder()
@@ -143,14 +143,11 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
 	        Position position = new Position(getProtocolName());
 	        position.setDeviceId(deviceSession.getDeviceId());    
 	        position.setTime(new Date());//dateBuilder.getDate());
-	        
-	        /*DateBuilder dateBuilder = new DateBuilder()
-	                .setCurrentDate()
-	                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));*/
-	        //Date date = new Date();  
+	        position.setUptime(parser.nextDouble(0)); 
 	        position.setValid(true);
 	        position.setLatitude(parser.nextDouble(0));
 	        position.setLongitude(parser.nextDouble(0)); 
+	        position.setAltitude(parser.nextDouble(0));
 
 	        return position;
     }
@@ -225,14 +222,12 @@ public class T55ProtocolDecoder extends BaseProtocolDecoder {
 
         Position position = new Position(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
-        
-        position.setTime(new Date());//dateBuilder.getDate());
- 
 
         DateBuilder dateBuilder = new DateBuilder()
                 .setCurrentDate()
                 .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
         position.setTime(dateBuilder.getDate());
+        
         position.setValid(true); 
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());

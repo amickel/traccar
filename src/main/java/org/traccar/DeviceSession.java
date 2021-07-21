@@ -15,6 +15,7 @@
  */
 package org.traccar;
 
+import java.util.Date;
 import java.util.TimeZone;
 
 public class DeviceSession {
@@ -37,6 +38,15 @@ public class DeviceSession {
 
     public TimeZone getTimeZone() {
         return timeZone;
+    }
+    private Date date;
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public Date getDate() {
+        return date;
     }
 
 }
